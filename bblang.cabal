@@ -15,8 +15,6 @@ executable bblang
   build-depends:       
       base                 >= 4.7 && <5
     , haskeline            >= 0.7.1.2
-    , llvm-hs              >= 4.0.0.0
-    , llvm-hs-pure         >= 4.0.0.0
     , parsec               >= 3.1
     , mtl                  >= 2.1.3
     , transformers         >= 0.3.0.0 && < 0.6

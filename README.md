@@ -21,19 +21,13 @@ print hello!(a);
 ```
 `map` as a macro:  
 ```rust
-let arr = map!([1, 2, 3], x * x);
+let arr = map!([1, 2, 3] x * x);
 print arr
 ```
 
-# Requirements
+# Build
 * ghc
 * cabal
 ```
-cabal update
-cabal install --lib parsec
-```
-
-# Build
-```
-ghc -o main --make src/Main.hs
+cabal run bblang
 ```

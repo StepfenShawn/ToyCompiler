@@ -1,12 +1,25 @@
 module Parser where
-    import Text.Parsec
-    import Text.Parsec.String (Parser)
+
+import Text.Parsec
+import Text.Parsec.String (Parser)
 
 import qualified Text.Parsec.Expr as Exp
 import qualified Text.Parsec.Token as Tok
 
 import Lexer
 import Syntax
+
+-- 优先级binding
+binary s f assoc = Exp.Infix (reservedOp s >> return (BinOp f)) assoc
+
+table = [[binary "*" Times Exp.AssocLeft,
+          binary "/" Divide Exp.AssocLeft],
+          [binary "+" Plus Exp.AssocLeft,
+           binary "-" Minus Exp.AssocLeft]]
+
+expr :: Parser Expr
+expr = Exp.buildExpressionParser table factor
+
 
 int :: Parser Expr
 int = do
@@ -44,3 +57,26 @@ factor = try floating
         <|> try call
         <|> variable
         <|> parens expr
+
+defn :: Parser Expr
+defn = try function
+    <|> expr
+
+contents :: Parser a -> Parser a
+contents p = do
+    Tok.whiteSpace lexer
+    r <- p
+    eof
+    return r
+
+topleval :: Parser [Expr]
+topleval = many $ do
+    def <- defn
+    reservedOp ";"
+    return def
+
+parseExpr :: String -> Either ParseError Expr
+parseExpr s = parse (contents expr) "<stdin>" s
+
+parseToplevel :: String -> Either ParseError [Expr]
+parseToplevel s = parse (contents topleval) "<stdin>" s

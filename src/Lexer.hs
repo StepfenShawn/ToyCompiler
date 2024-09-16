@@ -29,7 +29,7 @@ commaSep :: Parser a -> Parser [a]
 commaSep = Tok.commaSep lexer
 
 semiSep :: Parser a -> Parser [a]
-semiSep= Tok.semiSep lexer
+semiSep = Tok.semiSep lexer
 
 identifier :: Parser String
 identifier = Tok.identifier lexer

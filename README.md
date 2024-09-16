@@ -31,3 +31,8 @@ print arr
 ```
 cabal run bblang
 ```
+
+# Test
+```
+cabal test
+```

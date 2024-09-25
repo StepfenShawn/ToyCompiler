@@ -34,5 +34,5 @@ cabal run bblang
 
 # Test
 ```
-cabal test
+cabal run test
 ```

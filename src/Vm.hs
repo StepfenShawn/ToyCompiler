@@ -65,6 +65,16 @@ popInt (VMState (x : xs) l) = (VMState xs l, Just x)
 popInt (VMState _ _) = (VMError "Empty stack", Nothing)
 popInt vm = (vm, Nothing)
 
+saveLocal :: Int -> VM -> VM
+saveLocal i (VMState (s:ss) (ArrayLS l : ls)) = VMState ss $ ArrayLS (l // [(i, s)]) : ls
+saveLocal _ (VMState _ _) = VMError "Failed to save local variable"
+saveLocal _ vm = vm
+
+loadLocal :: Int -> VM -> VM
+loadLocal i (VMState s ls@(ArrayLS l: _)) = VMState (l ! i : s) ls
+loadLocal _ (VMState _ _) = VMError "Failed to load local variable"
+loadLocal _ vm = vm
+
 cloneTop :: Int -> VM -> VM
 cloneTop n (VMState (x : xs) l) = VMState (take n (repeat x) ++ xs) l 
 cloneTop _ (VMState _ _) = VMError "Empty stack"
@@ -81,15 +91,44 @@ binOp f (VMState (x1:x2:xs) l) = VMState (x2 `f` x1 : xs) l
 binOp _ (VMState _ _) = VMError "Not enough arguments"
 binOp _ vm = vm
 
+boolOp :: (Int -> Int -> Bool) -> (Int -> Int -> Int)
+boolOp f = \a b -> boolToInt $ f a b
+    where
+        boolToInt False = 0
+        boolToInt True = 1
+
 -- exceute the instructions!
+-- returns new vm state and next executed block index or Nothing on function return
 exceute :: Module -> VM -> [Instruction] -> (VM, Maybe Int)
 exceute _ (VMError e) _ = (VMError e, Nothing)
 exceute _ _ [] = (VMError "No more instructions", Nothing)
 exceute module_ vm (x : xs) = case x of
     Const v -> f1 $ pushInts [v]
+    Clone n -> f1 $ cloneTop n
+    Add -> f2 (+)
+    Sub -> f2 (-)
+    Mul -> f2 (*)
+    Div -> f2 div
+    Rem -> f2 rem
+    Gt -> f2 $ boolOp (>)
+    Ge -> f2 $ boolOp (>=)
+    Lt -> f2 $ boolOp (<)
+    Le -> f2 $ boolOp (<=)
+    Eq -> f2 $ boolOp (==)
+    Ne -> f2 $ boolOp (/=)
+    CallI i -> f1 $ exceuteFunction module_ i
+    Ret -> (vm, Nothing)
+    Jmp b -> (vm, Just b)
+    JmpZ b1 b2 -> case popInt vm of
+        (vm', Just v) -> (vm', Just $ if v == 0 then b1 else b2)
+        (vm', Nothing) -> (vm', Nothing)
+    Call n -> case lookupFunction module_ n of
+        Just i -> f1 $ exceuteFunction module_ i
+        Nothing -> (VMError "Unknown function", Nothing)
     Err e -> (VMError e, Nothing)
     where 
         f1 f = exceute module_ (f vm) xs
+        f2 f = exceute module_ (binOp f vm) xs
 
 -- get Function on index from Module
 getFunction :: Module -> Int -> Function
